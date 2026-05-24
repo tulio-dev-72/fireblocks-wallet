@@ -107,6 +107,27 @@ button.reject { background: #fff; color: var(--danger); border: 1px solid #fda29
 .muted { color: var(--dim); font-size: 13px; }
 .empty { color: var(--dim); text-align: center; padding: 32px 0; }
 
+/* Guided demo bar */
+.guide {
+  background: var(--nav); color: #fff; border-radius: 14px; padding: 16px 18px; margin-bottom: 16px;
+}
+.guide-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 6px; }
+.guide-step { font-size: 12px; color: #9aa6bd; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; }
+.guide-title { font-size: 16px; font-weight: 700; margin: 2px 0 4px; }
+.guide-body { font-size: 13px; line-height: 1.55; color: #c8d0df; }
+.guide-actions { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+.guide-actions .spacer { flex: 1; }
+.guide button.next { background: var(--accent); color: #fff; border: 0; border-radius: 9px; padding: 9px 16px; font-weight: 700; font-size: 13px; cursor: pointer; }
+.guide button.next:hover { background: var(--accent-2); }
+.guide button.back, .guide button.exit { background: transparent; color: #c8d0df; border: 1px solid #3a4252; border-radius: 9px; padding: 9px 14px; font-size: 13px; cursor: pointer; }
+.guide-start {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  background: #eff4ff; border: 1px solid #c7d7fe; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px;
+}
+.guide-start .t { font-weight: 600; font-size: 14px; color: var(--text); }
+.guide-start .d { font-size: 12px; color: var(--dim); }
+.guide-start button { background: var(--accent); color: #fff; border: 0; border-radius: 9px; padding: 9px 16px; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; }
+
 /* Lifecycle stepper */
 .lifecycle { background: var(--panel-2); border: 1px solid var(--border); border-radius: 14px; padding: 18px 16px; margin-top: 16px; }
 .step { display: flex; align-items: flex-start; gap: 12px; position: relative; padding-bottom: 18px; }

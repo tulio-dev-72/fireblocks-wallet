@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   api,
   getRole,
@@ -20,14 +20,64 @@ const TAB_ROLES: Record<Tab, Role[]> = {
   activity: ["viewer", "initiator", "approver", "admin"],
 };
 
+interface GuideStep {
+  label: string;
+  title: string;
+  body: string;
+  tab: Tab;
+  role: Role;
+  amount?: string;
+}
+
+const STEPS: GuideStep[] = [
+  {
+    label: "Step 1 of 5",
+    title: "See your vaults",
+    body: "These balances are live from Fireblocks. The browser never talks to Fireblocks directly or holds the API key — it only calls your backend. Even a read-only Viewer can see this.",
+    tab: "balances",
+    role: "admin",
+  },
+  {
+    label: "Step 2 of 5",
+    title: "Initiate a small transfer",
+    body: "You're now an Initiator. Amounts under the policy limit go straight through. Hit Send — it submits to Fireblocks immediately.",
+    tab: "send",
+    role: "initiator",
+    amount: "0.0001",
+  },
+  {
+    label: "Step 3 of 5",
+    title: "Trigger governance",
+    body: "Now the amount is 0.02 — above the policy threshold. Hit Send and watch: it gets HELD, never sent to Fireblocks, because a second person must approve. That's segregation of duties.",
+    tab: "send",
+    role: "initiator",
+    amount: "0.02",
+  },
+  {
+    label: "Step 4 of 5",
+    title: "Approve as a second person",
+    body: "An Initiator can't approve their own request. As an Approver, release the held transfer — only now does it go to Fireblocks for MPC signing.",
+    tab: "approvals",
+    role: "approver",
+  },
+  {
+    label: "Step 5 of 5",
+    title: "Watch it settle",
+    body: "Track the live lifecycle, then find it in Activity. Governed, approved, signed, settled — end to end.",
+    tab: "activity",
+    role: "approver",
+  },
+];
+
 export default function App() {
   const [role, setRoleState] = useState<Role>(getRole());
   const [tab, setTab] = useState<Tab>("balances");
   const [pendingCount, setPendingCount] = useState(0);
+  const [guideStep, setGuideStep] = useState<number | null>(null);
+  const [amountHint, setAmountHint] = useState<string | undefined>();
 
   const canApprove = role === "approver" || role === "admin";
 
-  // Keep the approvals badge fresh for roles that can approve.
   useEffect(() => {
     if (!canApprove) {
       setPendingCount(0);
@@ -40,6 +90,17 @@ export default function App() {
     return () => { live = false; clearInterval(id); };
   }, [canApprove, tab]);
 
+  // Guided demo: entering a step drives the UI to where it needs to be.
+  function goToStep(i: number) {
+    const s = STEPS[i];
+    if (!s) return;
+    setGuideStep(i);
+    setRole(s.role);
+    setRoleState(s.role);
+    setTab(s.tab);
+    if (s.amount) setAmountHint(s.amount);
+  }
+
   function changeRole(r: Role) {
     setRole(r);
     setRoleState(r);
@@ -47,12 +108,13 @@ export default function App() {
   }
 
   const visibleTabs = (Object.keys(TAB_ROLES) as Tab[]).filter((t) => TAB_ROLES[t].includes(role));
+  const step = guideStep !== null ? STEPS[guideStep] : null;
 
   return (
     <div className="shell">
       <div className="topbar">
         <div className="brand">
-          <Logo size={28} />
+          <Logo size={30} />
           <h1>Fireblocks Wallet</h1>
           <span className="pill">Sandbox</span>
         </div>
@@ -71,6 +133,34 @@ export default function App() {
         what you can do.
       </p>
 
+      {step ? (
+        <div className="guide">
+          <div className="guide-top">
+            <span className="guide-step">{step.label}</span>
+          </div>
+          <div className="guide-title">{step.title}</div>
+          <div className="guide-body">{step.body}</div>
+          <div className="guide-actions">
+            {guideStep! > 0 && <button className="back" onClick={() => goToStep(guideStep! - 1)}>Back</button>}
+            <button className="exit" onClick={() => setGuideStep(null)}>Exit demo</button>
+            <span className="spacer" />
+            {guideStep! < STEPS.length - 1 ? (
+              <button className="next" onClick={() => goToStep(guideStep! + 1)}>Next →</button>
+            ) : (
+              <button className="next" onClick={() => setGuideStep(null)}>Finish</button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="guide-start">
+          <div>
+            <div className="t">Guided demo</div>
+            <div className="d">A 5-step walkthrough of the governed transfer flow — it switches roles and tabs for you.</div>
+          </div>
+          <button onClick={() => goToStep(0)}>Start demo</button>
+        </div>
+      )}
+
       <div className="tabs">
         {visibleTabs.map((t) => (
           <button key={t} className={`tab ${tab === t ? "active" : ""}`} onClick={() => setTab(t)}>
@@ -81,7 +171,7 @@ export default function App() {
       </div>
 
       {tab === "balances" && <Balances />}
-      {tab === "send" && <Send />}
+      {tab === "send" && <Send amountHint={amountHint} />}
       {tab === "approvals" && <Approvals onChange={setPendingCount} />}
       {tab === "activity" && <Activity />}
     </div>
@@ -134,7 +224,7 @@ function Balances() {
   );
 }
 
-function Send() {
+function Send({ amountHint }: { amountHint?: string }) {
   const [source, setSource] = useState("0");
   const [dest, setDest] = useState("1");
   const [asset, setAsset] = useState("ETH_TEST5");
@@ -143,6 +233,9 @@ function Send() {
   const [error, setError] = useState<string | null>(null);
   const [held, setHeld] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState<{ txId: string; status: string } | null>(null);
+
+  // The guided demo can prefill the amount to script the flow.
+  useEffect(() => { if (amountHint) setAmount(amountHint); }, [amountHint]);
 
   async function submit() {
     setError(null); setHeld(null); setSubmitted(null); setSubmitting(true);
@@ -201,7 +294,6 @@ function Approvals({ onChange }: { onChange: (n: number) => void }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [released, setReleased] = useState<{ txId: string; status: string } | null>(null);
-  const unsub = useRef<(() => void) | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -214,7 +306,7 @@ function Approvals({ onChange }: { onChange: (n: number) => void }) {
     }
   }, [onChange]);
 
-  useEffect(() => { load(); return () => unsub.current?.(); }, [load]);
+  useEffect(() => { load(); }, [load]);
 
   async function decide(id: string, decision: "approve" | "reject") {
     setBusy(id);
