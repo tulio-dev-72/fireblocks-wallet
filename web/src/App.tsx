@@ -20,6 +20,14 @@ const TAB_ROLES: Record<Tab, Role[]> = {
   activity: ["viewer", "initiator", "approver", "admin"],
 };
 
+// Tab nav labels — "send" shows as "Transfer" so it isn't confused with the Send button.
+const TAB_LABELS: Record<Tab, string> = {
+  balances: "Balances",
+  send: "Transfer",
+  approvals: "Approvals",
+  activity: "Activity",
+};
+
 interface GuideStep {
   label: string;
   title: string;
@@ -176,7 +184,7 @@ export default function App() {
       <div className="tabs">
         {visibleTabs.map((t) => (
           <button key={t} className={`tab ${tab === t ? "active" : ""}`} onClick={() => setTab(t)}>
-            {t[0].toUpperCase() + t.slice(1)}
+            {TAB_LABELS[t]}
             {t === "approvals" && pendingCount > 0 && <span className="count">{pendingCount}</span>}
           </button>
         ))}
