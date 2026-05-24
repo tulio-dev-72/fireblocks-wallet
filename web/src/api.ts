@@ -31,8 +31,12 @@ let currentRole: Role = (localStorage.getItem("role") as Role) || "admin"
 export function getRole(): Role { return currentRole }
 export function setRole(r: Role) { currentRole = r; localStorage.setItem("role", r) }
 
+// Dev: empty base → Vite proxy. Prod: point at the deployed backend via
+// VITE_API_BASE_URL (set in the Vercel/Netlify env).
+const BASE = import.meta.env.VITE_API_BASE_URL ?? ''
+
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, {
+  const res = await fetch(`${BASE}${path}`, {
     ...init,
     headers: { 'Content-Type': 'application/json', 'X-Demo-Role': currentRole, ...(init?.headers ?? {}) },
   })
@@ -55,11 +59,12 @@ export const api = {
       body: JSON.stringify(input),
     }),
   getTransfer: (txId: string) => req<TransferStatus>(`/api/transfers/${txId}`),
+  resetDemo: () => req<{ ok: boolean }>('/api/demo/reset', { method: 'POST' }),
 }
 
 // Live transaction status via Server-Sent Events (native browser EventSource).
 export function subscribeToTxStatus(onEvent: (e: TxStatusEvent) => void): () => void {
-  const es = new EventSource('/stream/transactions')
+  const es = new EventSource(`${BASE}/stream/transactions`)
   es.onmessage = (msg) => {
     try { onEvent(JSON.parse(msg.data) as TxStatusEvent) } catch { /* ignore */ }
   }

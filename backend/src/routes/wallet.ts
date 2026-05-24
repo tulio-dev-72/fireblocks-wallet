@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { z } from "zod";
 import * as wallet from "../services/wallet-service.js";
 import * as approvals from "../services/approvals.js";
+import { txEvents } from "../services/events.js";
 import { config } from "../config.js";
 import { roleFromRequest, can } from "../lib/roles.js";
 
@@ -108,6 +109,17 @@ walletRouter.post(
     const result = await wallet.createTransfer(approval.input);
     approvals.markApproved(approval.id, result.txId, role);
     res.json({ state: "APPROVED", approvalId: approval.id, ...result });
+  })
+);
+
+// Reset the in-memory demo state (pending approvals + cached status events) so
+// each run starts clean. Does not touch real Fireblocks balances.
+walletRouter.post(
+  "/demo/reset",
+  asyncH(async (_req, res) => {
+    approvals.clear();
+    txEvents.clear();
+    res.json({ ok: true });
   })
 );
 

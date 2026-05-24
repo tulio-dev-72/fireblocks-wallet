@@ -107,6 +107,13 @@ export default function App() {
     if (!TAB_ROLES[tab].includes(r)) setTab("balances");
   }
 
+  // Clear server demo state (pending approvals + status cache) and reload clean.
+  async function resetDemo() {
+    try { await api.resetDemo(); } catch { /* ignore */ }
+    setRole("admin");
+    window.location.reload();
+  }
+
   const visibleTabs = (Object.keys(TAB_ROLES) as Tab[]).filter((t) => TAB_ROLES[t].includes(role));
   const step = guideStep !== null ? STEPS[guideStep] : null;
 
@@ -119,6 +126,7 @@ export default function App() {
           <span className="pill">Sandbox</span>
         </div>
         <div className="role">
+          <button className="ghost" onClick={resetDemo} title="Clear demo state and start fresh">Reset demo</button>
           <label>Role</label>
           <select value={role} onChange={(e) => changeRole(e.target.value as Role)}>
             <option value="viewer">Viewer</option>

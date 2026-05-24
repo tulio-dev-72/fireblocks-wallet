@@ -58,3 +58,7 @@ export function markRejected(id: string, decidedByRole: string) {
     a.decidedByRole = decidedByRole;
   }
 }
+
+export function clear() {
+  approvals.clear();
+}

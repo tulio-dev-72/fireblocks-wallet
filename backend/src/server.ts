@@ -6,6 +6,18 @@ import { streamRouter } from "./routes/stream.js";
 
 const app = express();
 
+// CORS: the deployed web app is a different origin than the backend.
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", config.WEB_ORIGIN);
+  res.header("Access-Control-Allow-Headers", "Content-Type, Idempotency-Key, X-Demo-Role");
+  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  if (req.method === "OPTIONS") {
+    res.sendStatus(204);
+    return;
+  }
+  next();
+});
+
 // Webhooks need the raw body for signature verification, so they are mounted
 // BEFORE the JSON body parser (which would otherwise consume the stream).
 app.use("/webhooks", webhookRouter);

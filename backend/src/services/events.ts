@@ -22,6 +22,10 @@ class TxEventBus extends EventEmitter {
   snapshot(): TxStatusEvent[] {
     return [...this.latest.values()];
   }
+
+  clear() {
+    this.latest.clear();
+  }
 }
 
 export const txEvents = new TxEventBus();

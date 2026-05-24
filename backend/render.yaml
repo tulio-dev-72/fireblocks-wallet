@@ -1,0 +1,24 @@
+# Render Blueprint for the backend. In the Render dashboard: New > Blueprint,
+# point it at this repo. Set the secret env vars (marked sync:false) by hand.
+services:
+  - type: web
+    name: fireblocks-wallet-backend
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: FIREBLOCKS_API_BASE_URL
+        value: https://sandbox-api.fireblocks.io/v1
+      - key: FIREBLOCKS_ENV
+        value: sandbox
+      - key: APPROVAL_THRESHOLD
+        value: "0.01"
+      - key: FIREBLOCKS_API_KEY
+        sync: false
+      - key: FIREBLOCKS_PRIVATE_KEY
+        sync: false
+      - key: WEB_ORIGIN
+        sync: false
