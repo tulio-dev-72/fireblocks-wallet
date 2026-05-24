@@ -1,6 +1,9 @@
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
 import * as wallet from "../services/wallet-service.js";
+import * as approvals from "../services/approvals.js";
+import { config } from "../config.js";
+import { roleFromRequest, can } from "../lib/roles.js";
 
 export const walletRouter = Router();
 
@@ -39,14 +42,79 @@ const transferSchema = z.object({
 walletRouter.post(
   "/transfers",
   asyncH(async (req, res) => {
+    const role = roleFromRequest(req);
+    if (!can.initiate(role)) {
+      res.status(403).json({ error: `Role '${role}' cannot initiate transfers` });
+      return;
+    }
     const parsed = transferSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: "validation_failed", details: z.treeifyError(parsed.error) });
       return;
     }
-    const idempotencyKey = req.header("Idempotency-Key") ?? undefined;
-    const result = await wallet.createTransfer({ ...parsed.data, idempotencyKey });
-    res.status(201).json(result);
+    const input = { ...parsed.data, idempotencyKey: req.header("Idempotency-Key") ?? undefined };
+
+    // Governance: above the threshold, hold for a second actor — don't touch
+    // Fireblocks yet (segregation of duties).
+    if (Number(input.amount) >= config.APPROVAL_THRESHOLD) {
+      const approval = approvals.enqueue(input, role);
+      res.status(202).json({
+        state: "PENDING_APPROVAL",
+        approvalId: approval.id,
+        requiresApproval: true,
+      });
+      return;
+    }
+
+    const result = await wallet.createTransfer(input);
+    res.status(201).json({ ...result, state: "SUBMITTED" });
+  })
+);
+
+walletRouter.get(
+  "/approvals",
+  asyncH(async (_req, res) => {
+    res.json({ approvals: approvals.listPending() });
+  })
+);
+
+const decisionSchema = z.object({ decision: z.enum(["approve", "reject"]) });
+
+walletRouter.post(
+  "/approvals/:id",
+  asyncH(async (req, res) => {
+    const role = roleFromRequest(req);
+    if (!can.approve(role)) {
+      res.status(403).json({ error: `Role '${role}' cannot approve transfers` });
+      return;
+    }
+    const parsed = decisionSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "decision must be 'approve' or 'reject'" });
+      return;
+    }
+    const approval = approvals.get(String(req.params.id));
+    if (!approval || approval.state !== "PENDING_APPROVAL") {
+      res.status(404).json({ error: "approval not found or already decided" });
+      return;
+    }
+
+    if (parsed.data.decision === "reject") {
+      approvals.markRejected(approval.id, role);
+      res.json({ state: "REJECTED", approvalId: approval.id });
+      return;
+    }
+
+    const result = await wallet.createTransfer(approval.input);
+    approvals.markApproved(approval.id, result.txId, role);
+    res.json({ state: "APPROVED", approvalId: approval.id, ...result });
+  })
+);
+
+walletRouter.get(
+  "/transactions",
+  asyncH(async (_req, res) => {
+    res.json({ transactions: await wallet.listRecentTransfers() });
   })
 );
 

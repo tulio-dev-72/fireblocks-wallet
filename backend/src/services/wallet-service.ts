@@ -81,6 +81,31 @@ export async function createTransfer(input: CreateTransferInput): Promise<Transf
   };
 }
 
+export interface TransferSummary {
+  txId?: string;
+  status?: string;
+  operation?: string;
+  assetId?: string;
+  amount?: string;
+  createdAt?: number;
+  sourceName?: string;
+  destName?: string;
+}
+
+export async function listRecentTransfers(limit = 15): Promise<TransferSummary[]> {
+  const { data } = await fireblocks.transactions.getTransactions({ limit });
+  return data.map((t) => ({
+    txId: t.id,
+    status: t.status,
+    operation: t.operation,
+    assetId: t.assetId,
+    amount: t.amountInfo?.amount,
+    createdAt: t.createdAt,
+    sourceName: t.source?.name,
+    destName: t.destination?.name,
+  }));
+}
+
 export async function getTransfer(txId: string) {
   const { data } = await fireblocks.transactions.getTransaction({ txId });
   return {
