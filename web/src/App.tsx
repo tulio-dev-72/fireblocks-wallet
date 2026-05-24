@@ -155,7 +155,7 @@ export default function App() {
             {guideStep! < STEPS.length - 1 ? (
               <button className="next" onClick={() => goToStep(guideStep! + 1)}>Next →</button>
             ) : (
-              <button className="next" onClick={() => setGuideStep(null)}>Finish</button>
+              <button className="next" onClick={resetDemo}>Finish &amp; reset for next person</button>
             )}
           </div>
         </div>
