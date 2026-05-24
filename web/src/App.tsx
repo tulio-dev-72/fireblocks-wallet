@@ -237,6 +237,7 @@ function Balances() {
 }
 
 function Send({ amountHint, onHeld, pulse }: { amountHint?: string; onHeld?: () => void; pulse?: boolean }) {
+  const [vaults, setVaults] = useState<Vault[]>([]);
   const [source, setSource] = useState("0");
   const [dest, setDest] = useState("1");
   const [asset, setAsset] = useState("ETH_TEST5");
@@ -246,8 +247,15 @@ function Send({ amountHint, onHeld, pulse }: { amountHint?: string; onHeld?: () 
   const [held, setHeld] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState<{ txId: string; status: string } | null>(null);
 
+  // Load vaults so the user picks by name instead of typing IDs.
+  useEffect(() => { api.listVaults().then(({ vaults }) => setVaults(vaults)).catch(() => {}); }, []);
+
   // The guided demo can prefill the amount to script the flow.
   useEffect(() => { if (amountHint) setAmount(amountHint); }, [amountHint]);
+
+  const label = (v: Vault) => `${v.name} (#${v.id})`;
+  const sourceVault = vaults.find((v) => v.id === source);
+  const assetOptions = sourceVault?.assets.map((a) => a.assetId) ?? ["ETH_TEST5"];
 
   async function submit() {
     setError(null); setHeld(null); setSubmitted(null); setSubmitting(true);
@@ -272,9 +280,15 @@ function Send({ amountHint, onHeld, pulse }: { amountHint?: string; onHeld?: () 
 
   return (
     <div>
-      <Input label="From vault" value={source} onChange={setSource} />
-      <Input label="To vault" value={dest} onChange={setDest} />
-      <Input label="Asset" value={asset} onChange={(v) => setAsset(v.toUpperCase())} />
+      <SelectField label="From" value={source} onChange={setSource}>
+        {vaults.map((v) => <option key={v.id} value={v.id}>{label(v)}</option>)}
+      </SelectField>
+      <SelectField label="To" value={dest} onChange={setDest}>
+        {vaults.map((v) => <option key={v.id} value={v.id}>{label(v)}</option>)}
+      </SelectField>
+      <SelectField label="Asset" value={asset} onChange={setAsset}>
+        {assetOptions.map((a) => <option key={a} value={a}>{a}</option>)}
+      </SelectField>
       <Input label="Amount" value={amount} onChange={setAmount} />
       <button className={`primary ${pulse ? "pulse-btn" : ""}`} onClick={submit} disabled={submitting}>
         {submitting ? "Sending…" : "Send"}
@@ -423,6 +437,15 @@ function Input({ label, value, onChange }: { label: string; value: string; onCha
     <div className="field">
       <label>{label}</label>
       <input value={value} onChange={(e) => onChange(e.target.value)} />
+    </div>
+  );
+}
+
+function SelectField({ label, value, onChange, children }: { label: string; value: string; onChange: (v: string) => void; children: React.ReactNode }) {
+  return (
+    <div className="field">
+      <label>{label}</label>
+      <select value={value} onChange={(e) => onChange(e.target.value)}>{children}</select>
     </div>
   );
 }
