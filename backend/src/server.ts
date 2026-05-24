@@ -8,7 +8,10 @@ const app = express();
 
 // CORS: the deployed web app is a different origin than the backend.
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", config.WEB_ORIGIN);
+  // Reflect the caller's origin (demo allows any front-end host: Vercel, GitHub Pages, etc.).
+  const origin = req.header("origin");
+  res.header("Access-Control-Allow-Origin", config.WEB_ORIGIN === "*" ? "*" : origin ?? config.WEB_ORIGIN);
+  res.header("Vary", "Origin");
   res.header("Access-Control-Allow-Headers", "Content-Type, Idempotency-Key, X-Demo-Role");
   res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   if (req.method === "OPTIONS") {

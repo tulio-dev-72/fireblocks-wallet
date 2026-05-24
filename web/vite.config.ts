@@ -5,6 +5,8 @@ import react from '@vitejs/plugin-react'
 // (no CORS in dev). The web client never talks to Fireblocks directly.
 export default defineConfig({
   plugins: [react()],
+  // GitHub Pages serves under /<repo>/; Vercel/other serve at root.
+  base: process.env.GH_PAGES === '1' ? '/fireblocks-wallet/' : '/',
   server: {
     // Allow access through a Cloudflare quick tunnel (public demo link).
     allowedHosts: ['.trycloudflare.com', 'localhost'],
