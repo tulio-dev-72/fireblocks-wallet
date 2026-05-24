@@ -149,3 +149,15 @@ button.reject { background: #fff; color: var(--danger); border: 1px solid #fda29
 .lifecycle-status { margin-top: 6px; color: var(--dim); font-size: 12px; }
 
 @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(37,99,235,0.45); } 50% { box-shadow: 0 0 0 6px rgba(37,99,235,0); } }
+
+/* Pulsing call-to-action button during the guided demo */
+.pulse-btn { animation: pulse-btn 1.3s infinite; }
+@keyframes pulse-btn {
+  0%,100% { box-shadow: 0 0 0 0 rgba(37,99,235,0.55); }
+  50% { box-shadow: 0 0 0 8px rgba(37,99,235,0); }
+}
+button.approve.pulse-btn { animation: pulse-btn-green 1.3s infinite; }
+@keyframes pulse-btn-green {
+  0%,100% { box-shadow: 0 0 0 0 rgba(18,183,106,0.55); }
+  50% { box-shadow: 0 0 0 8px rgba(18,183,106,0); }
+}

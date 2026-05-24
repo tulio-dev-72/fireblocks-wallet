@@ -6,6 +6,8 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
+    // Allow access through a Cloudflare quick tunnel (public demo link).
+    allowedHosts: ['.trycloudflare.com', 'localhost'],
     proxy: {
       '/api': { target: 'http://localhost:4000', changeOrigin: true },
       '/stream': { target: 'http://localhost:4000', changeOrigin: true },

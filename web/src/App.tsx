@@ -32,23 +32,23 @@ interface GuideStep {
 const STEPS: GuideStep[] = [
   {
     label: "Step 1 of 5",
-    title: "See your vaults",
-    body: "These balances are live from Fireblocks. The browser never talks to Fireblocks directly or holds the API key — it only calls your backend. Even a read-only Viewer can see this.",
+    title: "👋 Welcome — secure digital-asset custody",
+    body: "These are live balances straight from Fireblocks. The browser never holds the API key — it only talks to your backend. 👉 Click “Next →” below to begin the walkthrough.",
     tab: "balances",
     role: "admin",
   },
   {
     label: "Step 2 of 5",
-    title: "Initiate a small transfer",
-    body: "You're now an Initiator. Amounts under the policy limit go straight through. Hit Send — it submits to Fireblocks immediately.",
+    title: "Send a small payment",
+    body: "You're acting as an Initiator. The amount (0.0001) is below the policy limit, so it goes straight through. 👉 Click the blue “Send” button below.",
     tab: "send",
     role: "initiator",
     amount: "0.0001",
   },
   {
     label: "Step 3 of 5",
-    title: "Trigger governance",
-    body: "Now the amount is 0.02 — above the policy threshold. Hit Send and watch: it gets HELD, never sent to Fireblocks, because a second person must approve. That's segregation of duties.",
+    title: "Now try a large one — watch governance kick in",
+    body: "The amount is now 0.02 — above the policy limit. 👉 Click “Send”. Instead of going through, it gets HELD for a second person to approve. That's segregation of duties.",
     tab: "send",
     role: "initiator",
     amount: "0.02",
@@ -56,14 +56,14 @@ const STEPS: GuideStep[] = [
   {
     label: "Step 4 of 5",
     title: "Approve as a second person",
-    body: "An Initiator can't approve their own request. As an Approver, release the held transfer — only now does it go to Fireblocks for MPC signing.",
+    body: "You're now an Approver (an Initiator can't approve their own request). 👉 Click the green “Approve & sign” button to release it to Fireblocks for MPC signing.",
     tab: "approvals",
     role: "approver",
   },
   {
     label: "Step 5 of 5",
-    title: "Watch it settle",
-    body: "Track the live lifecycle, then find it in Activity. Governed, approved, signed, settled — end to end.",
+    title: "✅ Settled — end to end",
+    body: "Watch the live status below move to Completed. That's the full governed flow: initiate → policy hold → approval → MPC signing → settled. 👉 Click “Finish & reset” to leave it clean for the next person.",
     tab: "activity",
     role: "approver",
   },
@@ -73,7 +73,7 @@ export default function App() {
   const [role, setRoleState] = useState<Role>(getRole());
   const [tab, setTab] = useState<Tab>("balances");
   const [pendingCount, setPendingCount] = useState(0);
-  const [guideStep, setGuideStep] = useState<number | null>(null);
+  const [guideStep, setGuideStep] = useState<number | null>(0); // auto-start the guide
   const [amountHint, setAmountHint] = useState<string | undefined>();
 
   const canApprove = role === "approver" || role === "admin";
@@ -106,6 +106,10 @@ export default function App() {
     setRoleState(r);
     if (!TAB_ROLES[tab].includes(r)) setTab("balances");
   }
+
+  // Auto-advance the guide when the user completes the key action of a step.
+  function handleHeld() { if (guideStep === 2) goToStep(3); }       // large send → held → approve step
+  function handleApproved() { if (guideStep === 3) goToStep(4); }   // approved → live-status step
 
   // Clear server demo state (pending approvals + status cache) and reload clean.
   async function resetDemo() {
@@ -179,8 +183,8 @@ export default function App() {
       </div>
 
       {tab === "balances" && <Balances />}
-      {tab === "send" && <Send amountHint={amountHint} />}
-      {tab === "approvals" && <Approvals onChange={setPendingCount} />}
+      {tab === "send" && <Send amountHint={amountHint} onHeld={handleHeld} pulse={guideStep === 1 || guideStep === 2} />}
+      {tab === "approvals" && <Approvals onChange={setPendingCount} onApproved={handleApproved} pulse={guideStep === 3} />}
       {tab === "activity" && <Activity />}
     </div>
   );
@@ -232,7 +236,7 @@ function Balances() {
   );
 }
 
-function Send({ amountHint }: { amountHint?: string }) {
+function Send({ amountHint, onHeld, pulse }: { amountHint?: string; onHeld?: () => void; pulse?: boolean }) {
   const [source, setSource] = useState("0");
   const [dest, setDest] = useState("1");
   const [asset, setAsset] = useState("ETH_TEST5");
@@ -255,6 +259,7 @@ function Send({ amountHint }: { amountHint?: string }) {
       });
       if (res.state === "PENDING_APPROVAL") {
         setHeld(res.approvalId ?? "");
+        onHeld?.();
       } else if (res.txId) {
         setSubmitted({ txId: res.txId, status: res.status ?? "SUBMITTED" });
       }
@@ -271,7 +276,7 @@ function Send({ amountHint }: { amountHint?: string }) {
       <Input label="To vault" value={dest} onChange={setDest} />
       <Input label="Asset" value={asset} onChange={(v) => setAsset(v.toUpperCase())} />
       <Input label="Amount" value={amount} onChange={setAmount} />
-      <button className="primary" onClick={submit} disabled={submitting}>
+      <button className={`primary ${pulse ? "pulse-btn" : ""}`} onClick={submit} disabled={submitting}>
         {submitting ? "Sending…" : "Send"}
       </button>
       {error && <p className="error">{error}</p>}
@@ -297,7 +302,7 @@ function Send({ amountHint }: { amountHint?: string }) {
   );
 }
 
-function Approvals({ onChange }: { onChange: (n: number) => void }) {
+function Approvals({ onChange, onApproved, pulse }: { onChange: (n: number) => void; onApproved?: () => void; pulse?: boolean }) {
   const [items, setItems] = useState<Approval[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -320,7 +325,10 @@ function Approvals({ onChange }: { onChange: (n: number) => void }) {
     setBusy(id);
     try {
       const res = await api.decideApproval(id, decision);
-      if (res.state === "APPROVED" && res.txId) setReleased({ txId: res.txId, status: res.status ?? "SUBMITTED" });
+      if (res.state === "APPROVED" && res.txId) {
+        setReleased({ txId: res.txId, status: res.status ?? "SUBMITTED" });
+        onApproved?.();
+      }
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -347,7 +355,7 @@ function Approvals({ onChange }: { onChange: (n: number) => void }) {
           <div className="kv"><span className="k">Route</span><span className="v">vault #{a.input.sourceVaultId} → #{a.input.destVaultId}</span></div>
           <div className="row-between" style={{ marginTop: 12, marginBottom: 0 }}>
             <button className="reject" disabled={busy === a.id} onClick={() => decide(a.id, "reject")}>Reject</button>
-            <button className="approve" disabled={busy === a.id} onClick={() => decide(a.id, "approve")}>
+            <button className={`approve ${pulse ? "pulse-btn" : ""}`} disabled={busy === a.id} onClick={() => decide(a.id, "approve")}>
               {busy === a.id ? "…" : "Approve & sign"}
             </button>
           </div>
