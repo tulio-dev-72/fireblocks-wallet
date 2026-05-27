@@ -10,6 +10,7 @@ import {
 } from "./api";
 import { Logo } from "./Logo";
 import { TransactionLifecycle } from "./TxLifecycle";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 type Tab = "balances" | "send" | "approvals" | "activity";
 
@@ -194,6 +195,7 @@ export default function App() {
       {tab === "send" && <Send amountHint={amountHint} onHeld={handleHeld} pulse={guideStep === 1 || guideStep === 2} />}
       {tab === "approvals" && <Approvals onChange={setPendingCount} onApproved={handleApproved} pulse={guideStep === 3} />}
       {tab === "activity" && <Activity />}
+      <SpeedInsights />
     </div>
   );
 }
