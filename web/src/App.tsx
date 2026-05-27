@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   api,
   getRole,
@@ -8,6 +8,7 @@ import {
   type Approval,
   type TransferSummary,
 } from "./api";
+import { trackProductEvent } from "./lib/analytics";
 import { Logo } from "./Logo";
 import { TransactionLifecycle } from "./TxLifecycle";
 
@@ -85,6 +86,14 @@ export default function App() {
   const [amountHint, setAmountHint] = useState<string | undefined>();
 
   const canApprove = role === "approver" || role === "admin";
+  const appLoaded = useRef(false);
+
+  useEffect(() => {
+    if (appLoaded.current) return;
+    appLoaded.current = true;
+    trackProductEvent("app_loaded", { tab: "balances", role, workflow_type: "custody_demo" });
+    trackProductEvent("walkthrough_started", { step: "1", workflow_type: "guided_demo" });
+  }, [role]);
 
   useEffect(() => {
     if (!canApprove) {
@@ -107,11 +116,18 @@ export default function App() {
     setRoleState(s.role);
     setTab(s.tab);
     if (s.amount) setAmountHint(s.amount);
+    trackProductEvent("walkthrough_step_viewed", {
+      step: String(i + 1),
+      tab: s.tab,
+      role: s.role,
+      workflow_type: "guided_demo",
+    });
   }
 
   function changeRole(r: Role) {
     setRole(r);
     setRoleState(r);
+    trackProductEvent("role_switched", { role: r, tab, workflow_type: "custody_demo" });
     if (!TAB_ROLES[tab].includes(r)) setTab("balances");
   }
 
@@ -121,6 +137,7 @@ export default function App() {
 
   // Clear server demo state (pending approvals + status cache) and reload clean.
   async function resetDemo() {
+    trackProductEvent("demo_reset", { role, workflow_type: "custody_demo" });
     try { await api.resetDemo(); } catch { /* ignore */ }
     setRole("admin");
     window.location.reload();
@@ -177,13 +194,19 @@ export default function App() {
             <div className="t">Guided demo</div>
             <div className="d">A 5-step walkthrough of the governed transfer flow — it switches roles and tabs for you.</div>
           </div>
-          <button onClick={() => goToStep(0)}>Start demo</button>
+          <button onClick={() => {
+            goToStep(0);
+            trackProductEvent("walkthrough_started", { step: "1", workflow_type: "guided_demo" });
+          }}>Start demo</button>
         </div>
       )}
 
       <div className="tabs">
         {visibleTabs.map((t) => (
-          <button key={t} className={`tab ${tab === t ? "active" : ""}`} onClick={() => setTab(t)}>
+          <button key={t} className={`tab ${tab === t ? "active" : ""}`} onClick={() => {
+            setTab(t);
+            trackProductEvent("tab_viewed", { tab: t, role, workflow_type: "custody_demo" });
+          }}>
             {TAB_LABELS[t]}
             {t === "approvals" && pendingCount > 0 && <span className="count">{pendingCount}</span>}
           </button>
@@ -275,8 +298,18 @@ function Send({ amountHint, onHeld, pulse }: { amountHint?: string; onHeld?: () 
       });
       if (res.state === "PENDING_APPROVAL") {
         setHeld(res.approvalId ?? "");
+        trackProductEvent("transfer_initiated", {
+          path: "held_for_approval",
+          status: "pending_approval",
+          workflow_type: "custody_demo",
+        });
         onHeld?.();
       } else if (res.txId) {
+        trackProductEvent("transfer_initiated", {
+          path: "fast_path",
+          status: res.status ?? "submitted",
+          workflow_type: "custody_demo",
+        });
         setSubmitted({ txId: res.txId, status: res.status ?? "SUBMITTED" });
       }
     } catch (e) {
@@ -347,6 +380,11 @@ function Approvals({ onChange, onApproved, pulse }: { onChange: (n: number) => v
     setBusy(id);
     try {
       const res = await api.decideApproval(id, decision);
+      trackProductEvent("approval_submitted", {
+        action: decision,
+        status: res.state ?? decision,
+        workflow_type: "custody_demo",
+      });
       if (res.state === "APPROVED" && res.txId) {
         setReleased({ txId: res.txId, status: res.status ?? "SUBMITTED" });
         onApproved?.();
