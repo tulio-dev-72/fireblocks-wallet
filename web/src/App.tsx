@@ -175,18 +175,20 @@ export default function App() {
           />
         </div>
         <div className="role">
-          <button className="ghost" onClick={resetDemo} title="Clear demo state and start fresh">Reset demo</button>
-          <label>Role</label>
+          <label htmlFor="role-select">Role</label>
           <InfoTip
             label="What do roles do?"
             content="Roles enforce segregation of duties. Viewer sees balances; Initiator can submit transfers but cannot approve; Approver releases held transfers; Admin can do everything. A second person must approve high-value transfers."
           />
-          <select value={role} onChange={(e) => changeRole(e.target.value as Role)}>
+          <select id="role-select" value={role} onChange={(e) => changeRole(e.target.value as Role)}>
             <option value="viewer">Viewer</option>
             <option value="initiator">Initiator</option>
             <option value="approver">Approver</option>
             <option value="admin">Admin</option>
           </select>
+          <button className="ghost reset-demo" onClick={resetDemo} title="Clear demo state and start fresh">
+            Reset demo
+          </button>
         </div>
       </div>
       <p className="sub">

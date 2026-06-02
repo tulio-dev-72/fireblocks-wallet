@@ -82,11 +82,14 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.3px; }
 
 /* Role switcher */
 .role { display: flex; align-items: center; gap: 10px; }
-.role label { color: var(--dim); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin: 0; }
+.role label { color: var(--dim); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin: 0; white-space: nowrap; }
 .role select {
-  background: var(--panel-2); color: var(--text); border: 1.5px solid var(--primary);
-  border-radius: 9px; padding: 9px 14px; font-size: 14px; font-weight: 700; font-family: var(--font-sans);
+  height: 40px; background: var(--panel-2); color: var(--text); border: 1.5px solid var(--primary);
+  border-radius: 9px; padding: 0 36px 0 14px; font-size: 14px; font-weight: 700; font-family: var(--font-sans);
   box-shadow: var(--shadow-sm);
+}
+.role .reset-demo {
+  height: 40px; display: inline-flex; align-items: center; white-space: nowrap; padding: 0 14px;
 }
 
 /* Active-role banner — makes the current role prominent and self-describing */
