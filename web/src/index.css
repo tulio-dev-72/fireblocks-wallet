@@ -263,3 +263,17 @@ button.approve.pulse-btn { animation: pulse-btn-green 1.3s infinite; }
 @media (prefers-reduced-motion: reduce) {
   .step .dot, .step .connector, .pulse-btn, .step.active .dot, button.approve.pulse-btn { animation: none; transition: none; }
 }
+
+/* Mobile / responsive */
+@media (max-width: 560px) {
+  .shell { padding: 20px 13px 64px; }
+  .brand h1 { font-size: 21px; }
+  .topbar { gap: 12px; }
+  .role { flex-wrap: wrap; }
+  .role select { flex: 1; min-width: 0; }
+  .guide-top { flex-wrap: wrap; }
+  .guide-actions { flex-wrap: wrap; }
+  .guide-start { flex-direction: column; align-items: flex-start; }
+  .guide-start button { width: 100%; }
+  .tip-bubble { max-width: calc(100vw - 24px); }
+}
