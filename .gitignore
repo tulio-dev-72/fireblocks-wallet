@@ -1,1 +1,18 @@
 .vercel
+
+# Secrets / credentials (never commit) — applies repo-wide, incl. outside backend/
+.env
+.env.*
+!.env.example
+!**/.env.example
+.secrets/
+fireblocks_secret.key
+*.key
+*.pem
+# Allow the committed sandbox webhook PUBLIC key used for v1 verification.
+!backend/src/lib/fireblocks-sandbox-pubkey.pem
+
+# Misc
+node_modules/
+*.log
+.DS_Store
