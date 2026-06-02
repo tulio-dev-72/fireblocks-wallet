@@ -1,12 +1,22 @@
-// Fireblocks-style mark: dark-navy rounded square with a light upward triangle,
-// matching the console logo. Approximation for the demo — use the official asset
-// from the Fireblocks brand kit for production materials.
+// Custody-family mark: dark rounded tile with an orange shield and the
+// Fireblocks-style upward triangle. Matches the app favicon and the sibling
+// institutional-workflow-blueprints shield. Approximation for the demo.
 export function Logo({ size = 30 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-label="Fireblocks">
-      <rect width="32" height="32" rx="8" fill="#1A1F2E" />
-      <path d="M16 8l7 12H9l7-12z" fill="#EAF0FF" />
-      <path d="M16 14.5l3.2 5.5h-6.4l3.2-5.5z" fill="#2563EB" />
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-label="Fireblocks Wallet">
+      <rect width="32" height="32" rx="7" fill="#0a0b0d" />
+      <path
+        d="M16 4.2l9.3 3.3v6.4c0 5.8-3.8 9.8-9.3 12.1-5.5-2.3-9.3-6.3-9.3-12.1V7.5L16 4.2z"
+        fill="url(#walletShield)"
+      />
+      <path d="M16 10.4l5.2 9H10.8l5.2-9z" fill="#0a0b0d" />
+      <path d="M16 15l2.4 4.4h-4.8L16 15z" fill="url(#walletShield)" />
+      <defs>
+        <linearGradient id="walletShield" x1="6.7" y1="4.2" x2="25.3" y2="26" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#ff7a4d" />
+          <stop offset="1" stopColor="#ff5c35" />
+        </linearGradient>
+      </defs>
     </svg>
   );
 }

@@ -10,6 +10,7 @@ import {
 } from "./api";
 import { trackProductEvent } from "./lib/analytics";
 import { Logo } from "./Logo";
+import { InfoTip } from "./InfoTip";
 import { TransactionLifecycle } from "./TxLifecycle";
 
 type Tab = "balances" | "send" | "approvals" | "activity";
@@ -21,12 +22,27 @@ const TAB_ROLES: Record<Tab, Role[]> = {
   activity: ["viewer", "initiator", "approver", "admin"],
 };
 
-// Tab nav labels — "send" shows as "Transfer" so it isn't confused with the Send button.
+// Tab nav labels. "send" shows as "Transfer" so it isn't confused with the Send button.
 const TAB_LABELS: Record<Tab, string> = {
   balances: "Balances",
   send: "Transfer",
   approvals: "Approvals",
   activity: "Activity",
+};
+
+const ROLE_LABELS: Record<Role, string> = {
+  viewer: "Viewer",
+  initiator: "Initiator",
+  approver: "Approver",
+  admin: "Admin",
+};
+
+// One-line definition of what each role can do (segregation of duties).
+const ROLE_DEFS: Record<Role, string> = {
+  viewer: "Read-only. Sees balances and activity; cannot move funds.",
+  initiator: "Submits transfer requests. Cannot approve, not even their own.",
+  approver: "Reviews held transfers and releases them to Fireblocks for signing.",
+  admin: "Full access: initiate, approve, and manage the demo.",
 };
 
 interface GuideStep {
@@ -41,23 +57,23 @@ interface GuideStep {
 const STEPS: GuideStep[] = [
   {
     label: "Step 1 of 5",
-    title: "👋 Welcome — secure digital-asset custody",
-    body: "These are live balances straight from Fireblocks. The browser never holds the API key — it only talks to your backend. 👉 Click “Next →” below to begin the walkthrough.",
+    title: "Welcome to secure digital-asset custody",
+    body: "These are live balances straight from Fireblocks. The browser never holds the API key; it only talks to your backend. Click “Next” below to begin the walkthrough.",
     tab: "balances",
     role: "admin",
   },
   {
     label: "Step 2 of 5",
     title: "Send a small payment",
-    body: "You're acting as an Initiator. The amount (0.0001) is below the policy limit, so it goes straight through. 👉 Click the blue “Send” button below.",
+    body: "You're acting as an Initiator. The amount (0.0001) is below the policy limit, so it goes straight through. Click the “Send” button below.",
     tab: "send",
     role: "initiator",
     amount: "0.0001",
   },
   {
     label: "Step 3 of 5",
-    title: "Now try a large one — watch governance kick in",
-    body: "The amount is now 0.02 — above the policy limit. 👉 Click “Send”. Instead of going through, it gets HELD for a second person to approve. That's segregation of duties.",
+    title: "Now try a large one and watch governance kick in",
+    body: "The amount is now 0.02, above the policy limit. Click “Send”. Instead of going through, it gets held for a second person to approve. That's segregation of duties.",
     tab: "send",
     role: "initiator",
     amount: "0.02",
@@ -65,14 +81,14 @@ const STEPS: GuideStep[] = [
   {
     label: "Step 4 of 5",
     title: "Approve as a second person",
-    body: "You're now an Approver (an Initiator can't approve their own request). 👉 Click the green “Approve & sign” button to release it to Fireblocks for MPC signing.",
+    body: "You're now an Approver (an Initiator can't approve their own request). Click the “Approve & sign” button to release it to Fireblocks for MPC signing.",
     tab: "approvals",
     role: "approver",
   },
   {
     label: "Step 5 of 5",
-    title: "✅ Settled — end to end",
-    body: "Watch the live status below move to Completed. That's the full governed flow: initiate → policy hold → approval → MPC signing → settled. 👉 Click “Finish & reset” to leave it clean for the next person.",
+    title: "Settled, end to end",
+    body: "Watch the live status below move to Completed. That's the full governed flow: initiate, policy hold, approval, MPC signing, settled. Click “Finish & reset” to leave it clean for the next person.",
     tab: "activity",
     role: "approver",
   },
@@ -153,10 +169,18 @@ export default function App() {
           <Logo size={30} />
           <h1>Fireblocks Wallet</h1>
           <span className="pill">Sandbox</span>
+          <InfoTip
+            label="What is the sandbox?"
+            content="A Fireblocks test workspace wired to testnets (e.g. Sepolia). Balances and transactions are real Fireblocks API data with no real-world value, so it is safe to experiment."
+          />
         </div>
         <div className="role">
           <button className="ghost" onClick={resetDemo} title="Clear demo state and start fresh">Reset demo</button>
           <label>Role</label>
+          <InfoTip
+            label="What do roles do?"
+            content="Roles enforce segregation of duties. Viewer sees balances; Initiator can submit transfers but cannot approve; Approver releases held transfers; Admin can do everything. A second person must approve high-value transfers."
+          />
           <select value={role} onChange={(e) => changeRole(e.target.value as Role)}>
             <option value="viewer">Viewer</option>
             <option value="initiator">Initiator</option>
@@ -166,9 +190,15 @@ export default function App() {
         </div>
       </div>
       <p className="sub">
-        Secure custody demo — the browser talks only to the backend, never to Fireblocks. Your role determines
+        Secure custody demo. The browser talks only to the backend, never to Fireblocks. Your role determines
         what you can do.
       </p>
+
+      <div className="role-banner">
+        <span className="role-banner-label">Acting as</span>
+        <span className="role-chip">{ROLE_LABELS[role]}</span>
+        <span className="role-def">{ROLE_DEFS[role]}</span>
+      </div>
 
       {step ? (
         <div className="guide">
@@ -192,7 +222,7 @@ export default function App() {
         <div className="guide-start">
           <div>
             <div className="t">Guided demo</div>
-            <div className="d">A 5-step walkthrough of the governed transfer flow — it switches roles and tabs for you.</div>
+            <div className="d">A 5-step walkthrough of the governed transfer flow. It switches roles and tabs for you.</div>
           </div>
           <button onClick={() => {
             goToStep(0);
@@ -243,7 +273,13 @@ function Balances() {
   return (
     <div>
       <div className="row-between">
-        <span className="muted">{vaults.length} vault account(s)</span>
+        <span className="muted">
+          {vaults.length} vault account(s){" "}
+          <InfoTip
+            label="What is a vault account?"
+            content="A Fireblocks vault holds assets in MPC custody, so no single person holds a private key. Balances here are read live from the Fireblocks API via your backend; the browser never sees the API key."
+          />
+        </span>
         <button className="ghost" onClick={load}>Refresh</button>
       </div>
       {loading && <p className="muted">Loading…</p>}
@@ -330,7 +366,12 @@ function Send({ amountHint, onHeld, pulse }: { amountHint?: string; onHeld?: () 
       <SelectField label="Asset" value={asset} onChange={setAsset}>
         {assetOptions.map((a) => <option key={a} value={a}>{a}</option>)}
       </SelectField>
-      <Input label="Amount" value={amount} onChange={setAmount} />
+      <Input
+        label="Amount"
+        value={amount}
+        onChange={setAmount}
+        hint="Amounts at or below the policy threshold settle straight through. Above it, the transfer is held for a second person to approve before anything reaches Fireblocks. That is segregation of duties."
+      />
       <button className={`primary ${pulse ? "pulse-btn" : ""}`} onClick={submit} disabled={submitting}>
         {submitting ? "Sending…" : "Send"}
       </button>
@@ -340,7 +381,7 @@ function Send({ amountHint, onHeld, pulse }: { amountHint?: string; onHeld?: () 
         <div className="receipt">
           <div className="kv"><span className="k">Status</span><span className="badge warn">PENDING APPROVAL</span></div>
           <p className="note warn">
-            ⚑ This amount is above the approval threshold, so it was <b>held</b> — it has not been sent to Fireblocks.
+            This amount is above the approval threshold, so it was <b>held</b> and has not been sent to Fireblocks.
             Switch to the <b>Approver</b> role to release it (segregation of duties).
           </p>
           <div className="kv"><span className="k">Approval ID</span><span className="v mono">{held}</span></div>
@@ -349,7 +390,7 @@ function Send({ amountHint, onHeld, pulse }: { amountHint?: string; onHeld?: () 
 
       {submitted && (
         <div>
-          <p className="note dim">Transfer submitted — tracking the live lifecycle:</p>
+          <p className="note dim">Transfer submitted. Tracking the live lifecycle:</p>
           <TransactionLifecycle txId={submitted.txId} initialStatus={submitted.status} />
         </div>
       )}
@@ -400,7 +441,13 @@ function Approvals({ onChange, onApproved, pulse }: { onChange: (n: number) => v
   return (
     <div>
       <div className="row-between">
-        <span className="muted">{items.length} awaiting approval</span>
+        <span className="muted">
+          {items.length} awaiting approval{" "}
+          <InfoTip
+            label="What is the approval queue?"
+            content="High-value transfers are held here until an Approver (not the initiator) releases them. On approval, the transfer is sent to Fireblocks for MPC signing and broadcast. This enforces a two-person rule on the custody boundary."
+          />
+        </span>
         <button className="ghost" onClick={load}>Refresh</button>
       </div>
       {error && <p className="error">{error}</p>}
@@ -424,7 +471,7 @@ function Approvals({ onChange, onApproved, pulse }: { onChange: (n: number) => v
 
       {released && (
         <div>
-          <p className="note dim">Approved — released to Fireblocks. Live lifecycle:</p>
+          <p className="note dim">Approved and released to Fireblocks. Live lifecycle:</p>
           <TransactionLifecycle txId={released.txId} initialStatus={released.status} />
         </div>
       )}
@@ -457,7 +504,13 @@ function Activity() {
   return (
     <div>
       <div className="row-between">
-        <span className="muted">Recent transactions</span>
+        <span className="muted">
+          Recent transactions{" "}
+          <InfoTip
+            label="What does Activity show?"
+            content="The settlement lifecycle for each transfer: submitted, MPC signing, broadcast, then confirmed. Statuses update from Fireblocks, so what you see mirrors the real custody and on-chain progression."
+          />
+        </span>
         <button className="ghost" onClick={load}>Refresh</button>
       </div>
       {error && <p className="error">{error}</p>}
@@ -478,10 +531,23 @@ function Activity() {
   );
 }
 
-function Input({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function Input({
+  label,
+  value,
+  onChange,
+  hint,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  hint?: string;
+}) {
   return (
     <div className="field">
-      <label>{label}</label>
+      <label>
+        {label}
+        {hint ? <> <InfoTip label={`About ${label}`} content={hint} /></> : null}
+      </label>
       <input value={value} onChange={(e) => onChange(e.target.value)} />
     </div>
   );
