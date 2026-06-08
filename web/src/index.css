@@ -187,9 +187,10 @@ button:disabled { opacity: 0.55; cursor: default; }
 .muted { color: var(--dim); font-size: 13px; }
 .empty { color: var(--dim); text-align: center; padding: 36px 0; }
 
-/* Guided demo bar — navy emphasis panel */
+/* Guided demo bar — warm espresso-brown emphasis panel */
 .guide {
-  background: var(--primary); color: #f3ede0; border: 1px solid var(--primary-hover);
+  background: linear-gradient(180deg, #3b2c1a 0%, #2e2115 100%);
+  color: #f3ede0; border: 1px solid #241a0f;
   border-radius: 14px; padding: 17px 18px; margin-bottom: 16px; box-shadow: var(--shadow-md);
 }
 .guide-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 6px; }
